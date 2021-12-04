@@ -19,6 +19,7 @@ class Usuario extends CI_Controller {
         //6 - Houve algum problema no insert da tabela (Verificação - Banco)
         //7 - Usuário do sistema não informado (Verificação - FrontEnd)
         //8 - Houve problema no salvamento do LOG, mas o usuário foi incluso (LOG)
+        //9 - Usuário já existente na base de dados (Banco)
         
         $json = file_get_contents('php://input');
         $resultado = json_decode($json);
@@ -138,8 +139,10 @@ class Usuario extends CI_Controller {
         //7 - Usuário do Sistema não informado (Verificação - FrontEnd)
         //8 - Dados alterados corretamente na tabela usuário apenas (Verificação - Banco)
         //9 - Dados não informados para realizar a atualização (Verificação - FrontEnd)
-        //10 - Usuário já existente na base de dados (Banco)
-
+        //10 - Usuário desativado (Banco)
+        //11 - Dados repetidos - Dados do Banco == Dados informados (Banco)
+        //12 - O usuário informado não existe (Banco)
+     
         $json = file_get_contents('php://input');
         $resultado = json_decode($json);
 

@@ -8,7 +8,6 @@ class M_usuario extends CI_Model {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function inserir($usuario, $senha, $nome, $tipo_usuario, $usu_sistema){
-
         //Verificação da existência do usuário informado para inserção
 
         $this->load->model('m_verificacaoGeral');
@@ -16,6 +15,7 @@ class M_usuario extends CI_Model {
         $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario);
 
         if($ver_user['codigo'] == 13){
+       
             $this->db->trans_begin(); //Iniciando o translação de dados [Transaction]
 
             //Armazenando o log para a model m_log
@@ -47,10 +47,9 @@ class M_usuario extends CI_Model {
                 $dados = array('codigo' => 8,
                            'msg' => 'Houve algum problema no salvamento do Log. A inserção do usuário foi cancelada');
             }
-
         }elseif($ver_user['codigo'] == 12){
-            $dados = array('codigo' => 10,
-                           'msg' => $ver_user['msg']);
+            $dados = array('codigo' => 9,
+                           'msg' => "Usuário já existente na base de dados");
         
         }else{
             $dados = array('codigo' => 6,
@@ -67,7 +66,7 @@ class M_usuario extends CI_Model {
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function consultar($usuario, $nome, $tipo_usuario, $usu_sistema){
-        /**********************************************
+        /*****************************************************************************************************
          * Função que servirá para quatro tipos de consulta:
          * 
          *  * Para todos os usuário (SELECT * FROM usuarios where estatus = '')
@@ -120,11 +119,9 @@ class M_usuario extends CI_Model {
             $dados = array('codigo' => 6,
                            'msg' => 'Dados não encontrados');
         }
-
         //Envia o array $dados com as informações tratadas acima pela estrutura de decisão if
         //Importante, o atributo $retorno irá receber $dados e passar para o formato JSON
         return $dados;
-
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,26 +129,40 @@ class M_usuario extends CI_Model {
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function alterar($usuario, $nome, $senha, $tipo_usuario, $usu_sistema){
-        //Query de atualização de dados (O campo usuário não pode ser atualizado)
+        //Verificação dos campos a serem alterados
+        $this->load->model('m_verificacaoGeral');
+
+        $ver_userDes = $this->m_verificacaoGeral->verificacaoUserDesativado($usuario); 
+        $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario); 
+
+        if($ver_userDes['codigo'] == 15 && $ver_user['codigo'] == 12){
+
+            $ver_usuarioUpdate = $this->m_verificacaoGeral->verificaCamposUsuario($usuario, $senha, $nome, $tipo_usuario);
+
+            if($ver_usuarioUpdate['codigo'] == 17){
+                //Query de atualização de dados (O campo usuário não pode ser atualizado)
         
-        //Inciando Query Dinâmica no update
+                //Inciando Query Dinâmica no update
 
-        $sql = "update usuarios set ";
+                $sql = "update usuarios set ";
 
-        if ($nome != '') $sql = $sql . "nome = '$nome'"; 
+                if ($nome != '') $sql = $sql . "nome = '$nome'"; 
         
-        if ($senha != '' && $nome != '') $sql = $sql . ", senha = md5('$senha')";
-        elseif($senha != '') $sql = $sql . "senha = md5('$senha')";
+                if ($senha != '' && $nome != '') $sql = $sql . ", senha = md5('$senha')";
+                elseif($senha != '') $sql = $sql . "senha = md5('$senha')";
 
-        if (($tipo_usuario != '') && ($nome != '' || $senha != '')) $sql = $sql . ", tipo = '$tipo_usuario' ";
-        elseif($tipo_usuario != '') $sql = $sql . "tipo = '$tipo_usuario'";
+                if (($tipo_usuario != '') && ($nome != '' || $senha != '')) $sql = $sql . ", tipo = '$tipo_usuario' ";
+                elseif($tipo_usuario != '') $sql = $sql . "tipo = '$tipo_usuario'";
 
-        $sql = $sql . " where usuario = '$usuario'";
-        $this->db->query($sql);
+                $sql = $sql . " where usuario = '$usuario' and estatus = ''";
+                $this->db->query($sql);
+
+            }else { $sql = ""; }
+        }else { $sql = ""; }
 
         //Verificação (Atualização ocorreu com sucesso ou não)
         //Caso tenha ocorrido, a inserção do LOG será iniciada
-        if($this->db->affected_rows() > 0){
+        if($this->db->affected_rows() > 0 && $sql != ""){
            
             //Enviando os dados para o Banco LOG
             //Realizando a instância da model M_log
@@ -172,10 +183,21 @@ class M_usuario extends CI_Model {
                                          alteração realizada com sucesso');
             }
 
+        }elseif($ver_user['codigo'] == 13){
+            $dados = array('codigo' => 12,
+                           'msg'  => 'O usuário informado não existe na base de dados');
+
+        }elseif($ver_userDes['codigo'] == 14){
+            $dados = array('codigo' => 10,
+                           'msg'  => 'O usuário informado está desativado');
+
+        }elseif($ver_usuarioUpdate['codigo'] == 16){
+            $dados = array('codigo' => 11,
+                           'msg'  => 'Não há diferença entre os dados inseridos no banco com os informados');
+
         }else{
             $dados = array('codigo' => 6,
-                           'msg'  => 'Ocorreu um problema na atualização na tabela de usuários');
-          
+                           'msg'  => 'Ocorreu um problema na atualização na tabela de usuários'); 
         }
         //Envia o array $dados com as informações tratadas anteriormente pela estrutura de decisão if
         return $dados;

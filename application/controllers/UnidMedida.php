@@ -17,6 +17,8 @@ class UnidMedida extends CI_Controller {
         //4 - Descrição não informada (FrontEnd)
         //5 - Usuário não informado
         //6 - Houve algum problema no salvamento do LOG, mas a unidade foi inclusa (LOG)
+        //7 - O usuário fornecido não existe na base de dados (Banco)
+        //8 - O usuário fornecido está desativado (Banco)
 
         $json = file_get_contents('php://input');
         $resultado = json_decode($json);
@@ -105,6 +107,9 @@ class UnidMedida extends CI_Controller {
         // 5 - Usuário não informado (FrontEnd)
         // 6 - Dados não encontrados (Banco)
         // 7 - Houve um problema no salvamento do LOG (Banco)
+        // 8 - O usuário fornecido não existe na base de dados (Banco)
+        // 9 - O usuário fornecido está desativado (Banco)
+        // 10 - Não há atualização(ões) nos campo(os) informado(os)
 
         $json = file_get_contents('php://input');
         $resultado = json_decode($json);

@@ -13,15 +13,14 @@ class M_unidmedida extends CI_Model{
 
         $this->load->model('m_verificacaoGeral');
 
-        $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario);
+        $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario); 
+        $ver_userDes = $this->m_verificacaoGeral->verificacaoUserDesativado($usuario);
 
-        if($ver_user['codigo'] == 12){
+        if($ver_user['codigo'] == 12 && $ver_userDes['codigo'] == 15){
             //Query de inserção dos dados
             $sql = "insert into unid_medida (sigla, descricao, usucria)
                     values ('$sigla', '$descricao','$usuario')";
             $this->db->query($sql);
-        
-        //Variável SQL (Irá servir para verificar a inserção e enviar o código para o LOG)    
         }else{ $sql = ""; }
 
         //Verificação (Inserção ocorreu com sucesso ou não)
@@ -43,15 +42,16 @@ class M_unidmedida extends CI_Model{
                                'msg' => 'Houve algum problema no salvamento do Log, porém,
                                          Unidade de Medida cadastrada corretamente');
             }
-         
         }elseif($ver_user['codigo'] == 13){
             $dados = array('codigo' => 7,
                            'msg' => $ver_user['msg']);
 
+        }elseif($ver_userDes['codigo'] == 14){
+            $dados = array('codigo' => 7,
+                           'msg' => $ver_userDes['msg']);
         }else{
             $dados = array('codigo' => 6,
                            'msg' => 'Houve algum problema na inserção na tabela unidade de media');
-
         }
 
     //Envia o array dados com as informações tratadas acima pela estrutura de decisão IF
@@ -64,6 +64,7 @@ class M_unidmedida extends CI_Model{
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function consultar($codigo, $sigla, $descricao){
+        
         //Query de seleção
         $sql = "select * from unid_medida where estatus = ''";
         
@@ -94,22 +95,38 @@ class M_unidmedida extends CI_Model{
 
     public function alterar($codigo, $sigla, $descricao, $usuario){
         
-        //Begin - Transaction
-        $this->db->trans_begin();
-        
-        $sql = "update unid_medida ";
+        //Verificação - Integridade do campo usuário
 
-        if($sigla != '') $sql = $sql . "set sigla = '$sigla'";
+        $this->load->model('m_verificacaoGeral');
 
-        if($descricao != '' && $sigla != '') $sql = $sql . ", descricao = '$descricao'";
-        elseif($descricao != '') $sql = $sql . "set descricao = '$descricao'";
+        $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario); 
+        $ver_userDes = $this->m_verificacaoGeral->verificacaoUserDesativado($usuario);
+       
+        //Verificação das informações submetidas
 
-        $sql = $sql . " where cod_unidade = '$codigo'";
+        if($ver_user['codigo'] == 12 && $ver_userDes['codigo'] == 15){
+           
+            $ver_unidMedUpdate = $this->m_verificacaoGeral->verificaCamposUnidMedida($codigo, $sigla, $descricao);
 
-        $this->db->query($sql);
-   
+            if($ver_unidMedUpdate['codigo'] == 17){
+                //Begin - Transaction
+                $this->db->trans_begin();
+                
+                $sql = "update unid_medida ";
+
+                if($sigla != '') $sql = $sql . "set sigla = '$sigla'";
+
+                if($descricao != '' && $sigla != '') $sql = $sql . ", descricao = '$descricao'";
+                elseif($descricao != '') $sql = $sql . "set descricao = '$descricao'";
+
+                $sql = $sql . " where cod_unidade = '$codigo' and estatus = ''";
+                $this->db->query($sql);
+
+            }else{ $sql = ""; }
+        }else{ $sql = ""; }
+
         //Inserção ocorreu com sucesso ou não (Unidade de Medida)
-        if($this->db->affected_rows() > 0){
+        if($this->db->affected_rows() > 0 && $sql != ""){
 
             //Banco de LOG
             $this->load->model('m_log');
@@ -125,6 +142,18 @@ class M_unidmedida extends CI_Model{
                 $dados = array('codigo' => 7,
                                'msg' => 'O LOG não foi efetivado');
             }
+
+        }elseif($ver_user['codigo'] == 13){
+            $dados = array('codigo' => 8,
+                           'msg' => 'O usuário fornecido não existe na base de dados');
+
+        }elseif($ver_userDes['codigo'] == 14){
+            $dados = array('codigo' => 9,
+                           'msg' => 'O usuário fornecido está desativado');
+
+        }elseif($ver_unidMedUpdate['codigo'] == 16){
+            $dados = array('codigo' => 10,
+                           'msg' => 'Não há atualizações nos campos informados');
         }else{
             $dados = array('codigo' => 6,
                            'msg' => 'Houve um problema na atualização da Unidade de Medida');
@@ -132,7 +161,6 @@ class M_unidmedida extends CI_Model{
         
         //Retorna o Array $dados com informações tratadas pela estrutura IF acima
         return $dados;
-
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,14 +170,13 @@ class M_unidmedida extends CI_Model{
     public function desativar($codigo, $usuario){
 
         //Necessidade de Verificação
-
         $sqlVerification = "select * from produtos where unid_medida = '$codigo' and estatus=''";
         
         $resultVerification = $this->db->query($sqlVerification);
 
         if($resultVerification->num_rows() > 0){
             $dados = array('codigo' => 3,
-                           'msg' => 'A unidade informada não pode se desativada porque produto  possuem depêndencias com esta.');
+                           'msg' => 'A unidade informada não pode se desativada porque produtos possuem depêndencias com esta.');
         }else{
             
             //Begin - Transaction
