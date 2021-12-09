@@ -110,6 +110,8 @@ class UnidMedida extends CI_Controller {
         // 8 - O usuário fornecido não existe na base de dados (Banco)
         // 9 - O usuário fornecido está desativado (Banco)
         // 10 - Não há atualização(ões) nos campo(os) informado(os)
+        // 11 - A Unidade de Medida informada está desativada (Banco)
+        // 12 - O código informado não existe (Banco)
 
         $json = file_get_contents('php://input');
         $resultado = json_decode($json);
@@ -123,7 +125,7 @@ class UnidMedida extends CI_Controller {
 
         if($codigo == ''){
             $retorno = array('codigo' => 2,
-                           'msg' => 'Usuário não informado');
+                           'msg' => 'Código não informado');
 
         }elseif(strlen($sigla) > 3){
             $retorno = array('codigo' => 3,

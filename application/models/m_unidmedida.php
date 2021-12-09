@@ -8,7 +8,6 @@ class M_unidmedida extends CI_Model{
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function inserir($sigla, $descricao, $usuario){
- 
         //Verificação - Integridade do campo usuário
 
         $this->load->model('m_verificacaoGeral');
@@ -44,11 +43,11 @@ class M_unidmedida extends CI_Model{
             }
         }elseif($ver_user['codigo'] == 13){
             $dados = array('codigo' => 7,
-                           'msg' => $ver_user['msg']);
+                           'msg' => 'O usuário fornecido não está cadastrado na base de dados');
 
         }elseif($ver_userDes['codigo'] == 14){
             $dados = array('codigo' => 7,
-                           'msg' => $ver_userDes['msg']);
+                           'msg' => 'O usuário fornecido está desativado');
         }else{
             $dados = array('codigo' => 6,
                            'msg' => 'Houve algum problema na inserção na tabela unidade de media');
@@ -101,10 +100,14 @@ class M_unidmedida extends CI_Model{
 
         $ver_user = $this->m_verificacaoGeral->verificacaoUser($usuario); 
         $ver_userDes = $this->m_verificacaoGeral->verificacaoUserDesativado($usuario);
-       
+
+        $ver_unidMed = $this->m_verificacaoGeral->verificacaoCodUnidMedida($codigo);
+        $ver_unidMedDes = $this->m_verificacaoGeral->verificacaoUnidMedidaDes($codigo);
+        
         //Verificação das informações submetidas
 
-        if($ver_user['codigo'] == 12 && $ver_userDes['codigo'] == 15){
+        if($ver_user['codigo'] == 12 && $ver_userDes['codigo'] == 15 
+        && $ver_unidMed['codigo'] == 20 &&  $ver_unidMedDes['codigo'] == 23){
            
             $ver_unidMedUpdate = $this->m_verificacaoGeral->verificaCamposUnidMedida($codigo, $sigla, $descricao);
 
@@ -151,6 +154,14 @@ class M_unidmedida extends CI_Model{
             $dados = array('codigo' => 9,
                            'msg' => 'O usuário fornecido está desativado');
 
+        }elseif($ver_unidMedDes['codigo'] == 22){ 
+            $dados = array('codigo' => 11,
+                           'msg' => 'A Unidade de Medida fornecida está desativada');
+
+        }elseif($ver_unidMed['codigo'] == 21){ 
+            $dados = array('codigo' => 12,
+                           'msg' => 'O código fornecido não corresponde a uma Unidade de Medida');
+        
         }elseif($ver_unidMedUpdate['codigo'] == 16){
             $dados = array('codigo' => 10,
                            'msg' => 'Não há atualizações nos campos informados');
@@ -158,7 +169,6 @@ class M_unidmedida extends CI_Model{
             $dados = array('codigo' => 6,
                            'msg' => 'Houve um problema na atualização da Unidade de Medida');
         }
-        
         //Retorna o Array $dados com informações tratadas pela estrutura IF acima
         return $dados;
     }
@@ -169,14 +179,15 @@ class M_unidmedida extends CI_Model{
 
     public function desativar($codigo, $usuario){
 
-        //Necessidade de Verificação
-        $sqlVerification = "select * from produtos where unid_medida = '$codigo' and estatus=''";
-        
-        $resultVerification = $this->db->query($sqlVerification);
+        // Verificação - Dependência - Produto e UnidMedida
 
-        if($resultVerification->num_rows() > 0){
+        $this->load->model('m_verificacaoGeral');
+
+        $ver_depProduto = $this->m_verificacaoGeral->verificacaoDepProduto($codigo);
+
+        if($ver_depProduto['codigo'] == 18){
             $dados = array('codigo' => 3,
-                           'msg' => 'A unidade informada não pode se desativada porque produtos possuem depêndencias com esta.');
+                           'msg' => 'A unidade informada não pode ser desativada porque produtos possuem depêndencias com esta.');
         }else{
             
             //Begin - Transaction
@@ -210,24 +221,5 @@ class M_unidmedida extends CI_Model{
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ?>

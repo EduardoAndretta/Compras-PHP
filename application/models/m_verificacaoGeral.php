@@ -123,13 +123,72 @@ defined('BASEPATH')OR exit('No direct script access allowed');
             $result = $this->db->query($sqlVerification);
 
             if($result->num_rows() > 0){
-                $ver_user = array('codigo' => 16,
+                $ver_unid = array('codigo' => 16,
                                   'msg' => 'Os campos estão iguais');        
             }else{
-                $ver_user = array('codigo' => 17,
+                $ver_unid = array('codigo' => 17,
                                   'msg' => 'Os campos estão diferentes');
             }       
-            return $ver_user;     
+            return $ver_unid;     
         }
+    
+        //---//------------------------------------------------------------------------//---//
+        //---//   Verificação durante o processo de Desativação da Unidade de Medida   //---//
+        //---//          Caso haver dependência com produto(s), informa erro           //---//
+        //---//------------------------------------------------------------------------//---//
+
+        //Models utilitárias da função abaixo
+        // * M_unidMedida -> desativar()
+
+        public function verificacaoDepProduto($codigo){
+            
+            $sqlVerification = "select * from produtos where unid_medida = '$codigo' and estatus=''";
+            
+            $resultVerification = $this->db->query($sqlVerification);
+
+            if($resultVerification->num_rows() > 0){
+                $ver_unid = array('codigo' => 18,
+                           'msg' => 'Há dependências - UnidMedida e Produto');
+            }else{
+                $ver_unid = array('codigo' => 19,
+                               'msg' => 'Não há dependências - UnidMedida e Produto');
+            }
+            return $ver_unid;
+        }
+    
+        //Models utilitárias da função abaixo
+        // * M_unidMedida -> alterar()
+
+        public function verificacaoCodUnidMedida($codigo){
+
+            $result = $this->db->query("select * from unid_medida where cod_unidade = '$codigo' and estatus=''");
+            
+            if($result->num_rows() > 0){
+                $ver_unid = array('codigo' => 20,
+                                  'msg' => 'Há a existência do código informado');        
+            }else{
+                $ver_unid = array('codigo' => 21,
+                                  'msg' => 'Não há a existência do código informado');
+            }       
+            return $ver_unid;   
+        }
+
+        //Models utilitárias da função abaixo
+        // * M_unidMedida -> alterar()
+
+        public function verificacaoUnidMedidaDes($codigo){
+
+            $result = $this->db->query("select * from unid_medida where cod_unidade = '$codigo' and estatus='D'");
+            
+            if($result->num_rows() > 0){
+                $ver_unid = array('codigo' => 22,
+                                  'msg' => 'A Unidade de Medida informada está desativada');        
+            }else{
+                $ver_unid = array('codigo' => 23,
+                                  'msg' => 'A Unidade de Medida informada está ativa');
+            }       
+            return $ver_unid;   
+        }
+
     }
 ?>
